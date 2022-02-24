@@ -1,0 +1,17 @@
+{
+  "name": "requester",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "main": "dist/requester.js",
+  "types": "dist/requester.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "got": "11.8.2",
+    "nanoid": "3.3.1"
+  }
+}

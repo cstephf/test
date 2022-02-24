@@ -1,0 +1,91 @@
+#!/usr/bin/env node
+
+const { execSync } = require('child_process');
+const { readFileSync, writeFileSync } = require('fs');
+const { join } = require('path');
+const commitMessageFile = process.argv[2] || null;
+
+if (commitMessageFile !== null) {
+  const commitMessage = readFileSync(
+    join(__dirname, '../', commitMessageFile),
+    { encoding: 'utf-8' }
+  );
+
+  if (commitMessage) {
+    const messageLines = commitMessage.split('\n');
+    const messageTitle = messageLines[0];
+    const commitToIgnore = ['Merge branch'];
+    const isToBeFormat = !commitToIgnore.some(ignoreTxt =>
+      messageTitle.toLowerCase().startsWith(ignoreTxt.toLowerCase())
+    );
+
+    if (isToBeFormat) {
+      const { type, breacking, ticket, subject } = Object.assign(
+        { breacking: null, subject: null, ticket: null, type: null },
+        (
+          /^(?<type>.+?)(?:\((\w+)\))?(?<breacking>!)?(?:\[(R-(?<ticket>\d+))\])?\s(?<subject>.+?)$/.exec(
+            messageTitle
+          ) || {
+            groups: {}
+          }
+        ).groups
+      );
+      const messageType = {
+        archi: '🎨',
+        bug: '🐛',
+        build: '📦',
+        cicd: '👷',
+        contrib: '👥',
+        dep: '🔗',
+        doc: '📚',
+        feat: '🧩',
+        init: '🎬',
+        licence: '📜',
+        log: '🔊',
+        perf: '⚡',
+        refacto: '♻️',
+        release: '🎉',
+        revert: '⏳',
+        secu: '🔒',
+        test: '🧪',
+        uix: '💄',
+        wip: '🚧'
+      };
+
+      if (type && Object.keys(messageType).includes(type)) {
+        messageLines[0] = messageLines[0].replace(type, messageType[type]);
+      }
+      if (breacking) messageLines[0] = messageLines[0].replace('!', '❗');
+      if (!ticket) {
+        const brancheName = execSync('git rev-parse --abbrev-ref HEAD', {
+          encoding: 'utf-8'
+        })
+          .split('\n')
+          .shift();
+        const { ticketNumber } = Object.assign(
+          { ticketNumber: null },
+          (/^.+\/(?<ticketNumber>\d+)$/.exec(brancheName) || { groups: {} })
+            .groups
+        );
+        if (ticketNumber)
+          messageLines[0] = messageLines[0].replace(
+            ' ',
+            `[R-${ticketNumber}] `
+          );
+      }
+      if (subject)
+        messageLines[0] = messageLines[0].replace(
+          subject,
+          subject.toUpperCase()
+        );
+      writeFileSync(
+        join(__dirname, '../', commitMessageFile),
+        messageLines.join('\n'),
+        { encoding: 'utf-8' }
+      );
+    }
+
+    console.log('> original commit message\n', commitMessage);
+    console.log('> transformed commit message\n', messageLines.join('\n'));
+  }
+}
